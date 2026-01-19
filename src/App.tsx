@@ -26,6 +26,8 @@ function App() {
   const [useCapturedImage, setUseCapturedImage] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'idle'; message: string }>({ type: 'idle', message: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [saveMode, setSaveMode] = useState<'overwrite' | 'saveas'>('overwrite');
+  const [outputFilename, setOutputFilename] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -130,6 +132,11 @@ function App() {
       return;
     }
 
+    if (saveMode === 'saveas' && !outputFilename.trim()) {
+      setStatus({ type: 'error', message: 'Please enter an output filename.' });
+      return;
+    }
+
     setIsLoading(true);
     setStatus({ type: 'idle', message: '' });
 
@@ -137,7 +144,9 @@ function App() {
       const args: any = {
         videoPath,
         imagePath: useCapturedImage ? null : imagePath,
-        imageData: useCapturedImage ? capturedImage : null
+        imageData: useCapturedImage ? capturedImage : null,
+        saveMode,
+        outputFilename: saveMode === 'saveas' ? outputFilename : null
       };
 
       const result = await invoke<string>("set_thumbnail", args);
@@ -229,6 +238,44 @@ function App() {
         {capturedImage && (
           <div className={`captured-preview ${!useCapturedImage ? 'disabled' : ''}`}>
             <img src={capturedImage} alt="Captured thumbnail" />
+          </div>
+        )}
+      </div>
+
+      <div className="save-mode-section">
+        <h3>保存方法</h3>
+
+        <div className="selection-option">
+          <input
+            type="radio"
+            id="save-mode-overwrite"
+            checked={saveMode === 'overwrite'}
+            onChange={() => setSaveMode('overwrite')}
+          />
+          <label htmlFor="save-mode-overwrite">元のファイルを上書き</label>
+        </div>
+
+        <div className="selection-option">
+          <input
+            type="radio"
+            id="save-mode-saveas"
+            checked={saveMode === 'saveas'}
+            onChange={() => setSaveMode('saveas')}
+          />
+          <label htmlFor="save-mode-saveas">別名で保存</label>
+        </div>
+
+        {saveMode === 'saveas' && (
+          <div className="input-group">
+            <label className="input-label">出力ファイル名 (拡張子なし)</label>
+            <div className="input-wrapper">
+              <input
+                type="text"
+                value={outputFilename}
+                onChange={(e) => setOutputFilename(e.target.value)}
+                placeholder="例: video_with_thumbnail"
+              />
+            </div>
           </div>
         )}
       </div>
