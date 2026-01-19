@@ -9,6 +9,29 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
+fn get_startup_file() -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    // args[0] is the executable path
+    // args[1] might be the file path if opened via "Open with"
+    if args.len() > 1 {
+        let path = &args[1];
+        let path_obj = Path::new(path);
+        if path_obj.exists() && path_obj.is_file() {
+             let extension = path_obj.extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
+            
+            // Basic video extensions check
+            if ["mp4", "mkv", "avi", "mov", "webm"].contains(&extension.as_str()) {
+                 return Some(path.clone());
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
 fn set_thumbnail(
     video_path: String, 
     image_path: Option<String>, 
@@ -131,7 +154,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![greet, set_thumbnail])
+        .invoke_handler(tauri::generate_handler![greet, set_thumbnail, get_startup_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

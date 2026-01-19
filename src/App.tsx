@@ -196,6 +196,26 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    // Check for startup args (Open with...)
+    const checkStartup = async () => {
+      try {
+        const path = await invoke<string | null>('get_startup_file');
+        if (path) {
+          setVideoPath(path);
+          setVideoSrc(convertFileSrc(path));
+          setStatus({ type: 'idle', message: '' });
+          // Reset capture state
+          setCapturedImage("");
+          setUseCapturedImage(false);
+        }
+      } catch (err) {
+        console.error('Failed to get startup file:', err);
+      }
+    };
+    checkStartup();
+  }, []);
+
   return (
     <div className="container">
       <h1>動画サムネイル設定ツール</h1>
