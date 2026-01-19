@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -157,6 +158,43 @@ function App() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const unlisten = listen('tauri://drag-drop', (event) => {
+      const payload = event.payload as { paths: string[] };
+      if (payload.paths && payload.paths.length > 0) {
+        let videoFound = false;
+        let imageFound = false;
+
+        payload.paths.forEach((path) => {
+          const lowerPath = path.toLowerCase();
+
+          const isVideo = ['.mp4', '.mkv', '.avi', '.mov', '.webm'].some(ext => lowerPath.endsWith(ext));
+          const isImage = ['.png', '.jpg', '.jpeg', '.webp'].some(ext => lowerPath.endsWith(ext));
+
+          if (isVideo) {
+            setVideoPath(path);
+            setVideoSrc(convertFileSrc(path));
+            setCapturedImage("");
+            setUseCapturedImage(false);
+            videoFound = true;
+          } else if (isImage) {
+            setImagePath(path);
+            setUseCapturedImage(false);
+            imageFound = true;
+          }
+        });
+
+        if (videoFound || imageFound) {
+          setStatus({ type: 'idle', message: '' });
+        }
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
 
   return (
     <div className="container">
